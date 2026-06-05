@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Group Habit Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #25D366;
+    --green-dark: #128C7E;
+    --green-light: #DCF8C6;
+    --green-bg: rgba(37,211,102,0.08);
+    --surface: #fff;
+    --bg: #f5f6f8;
+    --border: rgba(0,0,0,0.08);
+    --border-strong: rgba(0,0,0,0.14);
+    --text: #111;
+    --text-2: #555;
+    --text-3: #999;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface: #1e1e1e;
+      --bg: #141414;
+      --border: rgba(255,255,255,0.08);
+      --border-strong: rgba(255,255,255,0.14);
+      --text: #f0f0f0;
+      --text-2: #aaa;
+      --text-3: #666;
+      --green-bg: rgba(37,211,102,0.1);
+      --green-light: rgba(37,211,102,0.15);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* LAYOUT */
+  .page { max-width: 1100px; margin: 0 auto; padding: 20px 16px 40px; }
+  @media (min-width: 768px) { .page { padding: 32px 24px 60px; } }
+
+  /* HEADER */
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .wa-logo { width: 42px; height: 42px; background: var(--green); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .wa-logo svg { width: 24px; height: 24px; fill: white; }
+  .header-title { font-size: 20px; font-weight: 600; color: var(--text); line-height: 1.2; }
+  .header-sub { font-size: 13px; color: var(--text-3); margin-top: 1px; font-family: 'DM Mono', monospace; }
+  .header-right { display: flex; align-items: center; gap: 8px; }
+  .sync-pill { font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 20px; }
+  .sync-ok { background: var(--green-bg); color: var(--green-dark); }
+  .sync-ing { background: rgba(255,165,0,0.1); color: #a06000; }
+  .sync-err { background: rgba(220,50,50,0.1); color: #a02020; }
+
+  /* TWO-COL DESKTOP */
+  .layout { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 768px) { .layout { grid-template-columns: 340px 1fr; align-items: start; gap: 20px; } }
+
+  /* CARD */
+  .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 18px; box-shadow: var(--shadow); }
+  .card + .card { margin-top: 16px; }
+  .card-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .card-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); display: flex; align-items: center; gap: 5px; }
+  .card-label svg { width: 14px; height: 14px; stroke: var(--text-3); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* BUTTONS */
+  .btn { border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2); border-radius: var(--radius-sm); padding: 6px 12px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-family: 'DM Sans', sans-serif; transition: background .15s; }
+  .btn:hover { background: var(--bg); }
+  .btn-green { background: var(--green); color: white; border-color: var(--green); }
+  .btn-green:hover { background: #1db958; border-color: #1db958; }
+  .btn-sm { padding: 4px 9px; font-size: 12px; }
+  .btn-icon { padding: 5px; border-radius: 6px; border-color: transparent; background: none; color: var(--text-3); }
+  .btn-icon:hover { background: var(--bg); color: #c00; }
+  .btn-full { width: 100%; justify-content: center; padding: 11px; font-size: 14px; }
+
+  /* GOAL CARD */
+  .goal-display { display: flex; align-items: center; gap: 12px; }
+  .goal-emoji { font-size: 28px; line-height: 1; }
+  .goal-name { font-size: 16px; font-weight: 600; color: var(--text); }
+  .goal-sub { font-size: 13px; color: var(--text-2); margin-top: 3px; }
+
+  /* TASKS */
+  .task-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 7px; }
+  .task-item:last-child { margin-bottom: 0; }
+  .task-emoji { font-size: 17px; width: 28px; text-align: center; flex-shrink: 0; }
+  .task-info { flex: 1; min-width: 0; }
+  .task-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .task-opted { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+  .task-actions { display: flex; align-items: center; gap: 4px; }
+
+  /* MEMBERS TABLE */
+  .members-table { width: 100%; border-collapse: collapse; }
+  .members-table th { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); padding: 0 4px 10px; text-align: center; }
+  .members-table th.name-col { text-align: left; padding-left: 0; min-width: 100px; }
+  .members-table th.today-col { color: var(--green-dark); }
+  .members-table td { padding: 5px 4px; vertical-align: middle; }
+  .members-table td.name-col { padding-left: 0; }
+  .members-table tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
+
+  /* MEMBER ROW */
+  .member-section { margin-bottom: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .member-section:last-child { margin-bottom: 0; }
+  .member-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg); cursor: pointer; user-select: none; }
+  .member-head:hover { background: rgba(0,0,0,0.04); }
+  .av { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+  .member-head-name { font-size: 14px; font-weight: 600; color: var(--text); flex: 1; }
+  .member-summary { font-size: 12px; color: var(--text-3); }
+  .streak-badge { font-size: 11px; font-weight: 600; background: var(--green-bg); color: var(--green-dark); border-radius: 10px; padding: 2px 7px; margin-left: 4px; }
+  .chevron { font-size: 12px; color: var(--text-3); transition: transform .2s; display: inline-block; }
+  .chevron.open { transform: rotate(180deg); }
+
+  .member-body { display: none; padding: 12px; border-top: 1px solid var(--border); }
+  .member-body.open { display: block; }
+
+  /* TASK ROWS INSIDE MEMBER */
+  .member-task-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .member-task-row:last-of-type { border-bottom: none; }
+  .mtr-emoji { font-size: 15px; width: 22px; flex-shrink: 0; }
+  .mtr-name { font-size: 12px; color: var(--text-2); flex: 1; min-width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .days-row { display: flex; gap: 4px; align-items: center; }
+
+  /* CHECK BUTTONS */
+  .ck { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--border-strong); background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; font-size: 10px; font-weight: 600; color: var(--text-3); font-family: 'DM Mono', monospace; transition: all .12s; position: relative; }
+  .ck:hover:not(:disabled) { border-color: var(--green); }
+  .ck.done { border-color: var(--green); background: var(--green); }
+  .ck.done svg { stroke: white; }
+  .ck.today { border-color: var(--green); color: var(--green-dark); }
+  .ck svg { width: 13px; height: 13px; stroke: transparent; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .ck:disabled { opacity: .2; cursor: default; }
+
+  /* STATS */
+  .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .stat-box { background: var(--bg); border-radius: var(--radius-sm); padding: 10px 12px; text-align: center; }
+  .stat-n { font-size: 22px; font-weight: 600; color: var(--text); font-family: 'DM Mono', monospace; }
+  .stat-l { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+  .progress-wrap { height: 4px; background: var(--border); border-radius: 2px; margin-top: 14px; overflow: hidden; }
+  .progress-bar { height: 100%; background: var(--green); border-radius: 2px; transition: width .4s; }
+
+  /* DAY HEADERS */
+  .day-header-row { display: flex; gap: 4px; margin-bottom: 4px; }
+  .day-lbl { width: 30px; text-align: center; font-size: 10px; font-weight: 600; color: var(--text-3); font-family: 'DM Mono', monospace; }
+  .day-lbl.today { color: var(--green-dark); }
+
+  /* MODALS */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 22px; width: 100%; max-width: 360px; box-shadow: 0 8px 40px rgba(0,0,0,.18); }
+  .modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+  .modal input { width: 100%; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 9px 11px; font-size: 14px; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); margin-bottom: 10px; }
+  .modal input:focus { outline: none; border-color: var(--green); }
+  .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
+
+  /* OPT-IN LIST */
+  .optin-section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); margin: 10px 0 6px; }
+  .optin-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .optin-row:last-child { border-bottom: none; }
+  .optin-check { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--border-strong); cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all .12s; }
+  .optin-check.on { background: var(--green); border-color: var(--green); }
+  .optin-check.on::after { content: ''; width: 10px; height: 10px; background: white; -webkit-mask: url("data:image/svg+xml,%3Csvg viewBox='0 0 10 10' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='1.5,5 4,7.5 8.5,2' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg viewBox='0 0 10 10' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='1.5,5 4,7.5 8.5,2' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat; display: block; }
+  .optin-label { font-size: 14px; color: var(--text); flex: 1; }
+
+  /* SHARE SECTION */
+  .share-section { margin-top: 16px; }
+  .link-box { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 12px; color: var(--text-2); word-break: break-all; font-family: 'DM Mono', monospace; margin-bottom: 10px; }
+
+  /* RESPONSIVE DAYS: on very small screens scroll horizontally */
+  .days-scroll { overflow-x: auto; }
+  .days-scroll::-webkit-scrollbar { height: 3px; }
+  .days-scroll::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+
+  /* EMPTY STATE */
+  .empty { font-size: 13px; color: var(--text-3); padding: 8px 0; }
+
+  /* MANAGE MODAL wider */
+  .modal.wide { max-width: 420px; }
+
+  /* ICONS (inline SVG helpers) */
+  .icon { display: inline-flex; align-items: center; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="wa-logo">
+        <svg viewBox="0 0 24 24"><path d="M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.334.101 11.893c0 2.096.549 4.14 1.595 5.945L0 24l6.335-1.652C8.07 23.346 10.035 23.8 12.043 23.8c6.582 0 11.943-5.334 11.944-11.893 0-3.181-1.24-6.163-3.467-8.458zm-8.475 18.312c-1.783 0-3.533-.48-5.06-1.385l-.363-.214-3.761.981 1.003-3.648-.237-.375a8.248 8.248 0 01-1.601-2.742v-.01c.003-4.546 3.714-8.245 8.279-8.245 2.21.001 4.286.859 5.852 2.42a8.184 8.184 0 012.424 5.83c-.002 4.546-3.714 8.246-8.278 8.246zm4.526-6.184c-.247-.123-1.462-.72-1.69-.802-.225-.08-.39-.123-.553.123-.166.245-.637.803-.78.967-.145.166-.287.185-.535.062-.246-.124-1.04-.382-1.98-1.22-.733-.65-1.228-1.454-1.37-1.7-.143-.246-.015-.38.108-.502.11-.11.247-.286.37-.43.123-.143.164-.245.246-.41.082-.164.041-.308-.02-.431-.062-.122-.554-1.331-.758-1.82-.2-.477-.404-.413-.554-.421-.143-.007-.308-.009-.473-.009-.164 0-.431.062-.658.308-.226.246-.862.841-.862 2.051s.883 2.38 1.005 2.543c.123.164 1.737 2.65 4.21 3.717.588.254 1.047.405 1.404.52.59.188 1.127.162 1.551.098.473-.07 1.462-.598 1.668-1.175.205-.577.205-1.072.144-1.175-.063-.102-.226-.164-.474-.287z"/></svg>
+      </div>
+      <div>
+        <div class="header-title">Group Habit Tracker</div>
+        <div class="header-sub" id="week-label">Loading…</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="sync-pill sync-ing" id="sync-badge">Connecting…</span>
+      <button class="btn btn-green" onclick="shareWA()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.334.101 11.893c0 2.096.549 4.14 1.595 5.945L0 24l6.335-1.652C8.07 23.346 10.035 23.8 12.043 23.8c6.582 0 11.943-5.334 11.944-11.893 0-3.181-1.24-6.163-3.467-8.458zm-8.475 18.312c-1.783 0-3.533-.48-5.06-1.385l-.363-.214-3.761.981 1.003-3.648-.237-.375a8.248 8.248 0 01-1.601-2.742v-.01c.003-4.546 3.714-8.245 8.279-8.245 2.21.001 4.286.859 5.852 2.42a8.184 8.184 0 012.424 5.83c-.002 4.546-3.714 8.246-8.278 8.246zm4.526-6.184c-.247-.123-1.462-.72-1.69-.802-.225-.08-.39-.123-.553.123-.166.245-.637.803-.78.967-.145.166-.287.185-.535.062-.246-.124-1.04-.382-1.98-1.22-.733-.65-1.228-1.454-1.37-1.7-.143-.246-.015-.38.108-.502.11-.11.247-.286.37-.43.123-.143.164-.245.246-.41.082-.164.041-.308-.02-.431-.062-.122-.554-1.331-.758-1.82-.2-.477-.404-.413-.554-.421-.143-.007-.308-.009-.473-.009-.164 0-.431.062-.658.308-.226.246-.862.841-.862 2.051s.883 2.38 1.005 2.543c.123.164 1.737 2.65 4.21 3.717.588.254 1.047.405 1.404.52.59.188 1.127.162 1.551.098.473-.07 1.462-.598 1.668-1.175.205-.577.205-1.072.144-1.175-.063-.102-.226-.164-.474-.287z"/></svg>
+        Share to WhatsApp
+      </button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- LEFT COLUMN -->
+    <div class="left-col">
+      <!-- GOAL -->
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-label">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            Goal
+          </span>
+          <button class="btn btn-sm" onclick="openModal('goal-modal')">✏️ Edit</button>
+        </div>
+        <div class="goal-display">
+          <span class="goal-emoji" id="goal-emoji">🧘</span>
+          <div>
+            <div class="goal-name" id="goal-text">Mindful mornings</div>
+            <div class="goal-sub" id="goal-sub">Pick your tasks, check in daily</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TASKS -->
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-label">
+            <svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            Available tasks
+          </span>
+          <button class="btn btn-sm" onclick="openModal('task-modal')">+ Add task</button>
+        </div>
+        <div id="tasks-list"></div>
+      </div>
+
+      <!-- SHARE -->
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-label">
+            <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Share tracker
+          </span>
+        </div>
+        <p style="font-size:13px;color:var(--text-2);margin-bottom:12px;line-height:1.5">
+          Share this link with your group. Everyone can open it on their phone and check in daily.
+        </p>
+        <div class="link-box" id="link-box">Open this file in a browser and copy the URL to share.</div>
+        <button class="btn btn-full" onclick="copyLink()" id="copy-btn">📋 Copy link</button>
+        <button class="btn btn-full btn-green" style="margin-top:8px" onclick="shareWA()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.334.101 11.893c0 2.096.549 4.14 1.595 5.945L0 24l6.335-1.652C8.07 23.346 10.035 23.8 12.043 23.8c6.582 0 11.943-5.334 11.944-11.893 0-3.181-1.24-6.163-3.467-8.458zm-8.475 18.312c-1.783 0-3.533-.48-5.06-1.385l-.363-.214-3.761.981 1.003-3.648-.237-.375a8.248 8.248 0 01-1.601-2.742v-.01c.003-4.546 3.714-8.245 8.279-8.245 2.21.001 4.286.859 5.852 2.42a8.184 8.184 0 012.424 5.83c-.002 4.546-3.714 8.246-8.278 8.246zm4.526-6.184c-.247-.123-1.462-.72-1.69-.802-.225-.08-.39-.123-.553.123-.166.245-.637.803-.78.967-.145.166-.287.185-.535.062-.246-.124-1.04-.382-1.98-1.22-.733-.65-1.228-1.454-1.37-1.7-.143-.246-.015-.38.108-.502.11-.11.247-.286.37-.43.123-.143.164-.245.246-.41.082-.164.041-.308-.02-.431-.062-.122-.554-1.331-.758-1.82-.2-.477-.404-.413-.554-.421-.143-.007-.308-.009-.473-.009-.164 0-.431.062-.658.308-.226.246-.862.841-.862 2.051s.883 2.38 1.005 2.543c.123.164 1.737 2.65 4.21 3.717.588.254 1.047.405 1.404.52.59.188 1.127.162 1.551.098.473-.07 1.462-.598 1.668-1.175.205-.577.205-1.072.144-1.175-.063-.102-.226-.164-.474-.287z"/></svg>
+          Post check-in to WhatsApp
+        </button>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: MEMBERS -->
+    <div class="right-col">
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-label">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Members
+          </span>
+          <button class="btn btn-sm" onclick="openModal('member-modal')">+ Add member</button>
+        </div>
+        <div id="members-list"></div>
+        <div class="progress-wrap"><div class="progress-bar" id="pbar" style="width:0%"></div></div>
+        <div class="stats-row">
+          <div class="stat-box"><div class="stat-n" id="stat-today">—</div><div class="stat-l">Completed today</div></div>
+          <div class="stat-box"><div class="stat-n" id="stat-pct">—</div><div class="stat-l">Week completion</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GOAL MODAL -->
+<div class="modal-overlay" id="goal-modal">
+  <div class="modal">
+    <h3>Edit goal</h3>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="inp-emoji" placeholder="🧘" maxlength="2" style="width:60px">
+      <input type="text" id="inp-goal" placeholder="Goal name" style="flex:1">
+    </div>
+    <input type="text" id="inp-sub" placeholder="Subtitle (e.g. Every day this week)">
+    <div class="modal-btns">
+      <button class="btn" onclick="closeModal('goal-modal')">Cancel</button>
+      <button class="btn btn-green" onclick="saveGoal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- TASK MODAL -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal">
+    <h3>Add task</h3>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="inp-task-emoji" placeholder="Emoji" maxlength="2" style="width:72px">
+      <input type="text" id="inp-task-name" placeholder="Task name" style="flex:1">
+    </div>
+    <div class="optin-section-label">Opt in members</div>
+    <div id="task-optin-list"></div>
+    <div class="modal-btns" style="margin-top:14px">
+      <button class="btn" onclick="closeModal('task-modal')">Cancel</button>
+      <button class="btn btn-green" onclick="saveTask()">Add task</button>
+    </div>
+  </div>
+</div>
+
+<!-- MEMBER MODAL -->
+<div class="modal-overlay" id="member-modal">
+  <div class="modal">
+    <h3>Add member</h3>
+    <input type="text" id="inp-member" placeholder="Name">
+    <div class="optin-section-label">Opt into tasks</div>
+    <div id="member-optin-list"></div>
+    <div class="modal-btns" style="margin-top:14px">
+      <button class="btn" onclick="closeModal('member-modal')">Cancel</button>
+      <button class="btn btn-green" onclick="saveMember()">Add member</button>
+    </div>
+  </div>
+</div>
+
+<!-- MANAGE MODAL (task opt-ins OR member tasks) -->
+<div class="modal-overlay" id="manage-modal">
+  <div class="modal wide">
+    <h3 id="manage-title">Manage</h3>
+    <div id="manage-list"></div>
+    <div class="modal-btns" style="margin-top:14px">
+      <button class="btn btn-green" onclick="closeModal('manage-modal')">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const AVC=[
+  {bg:'rgba(37,211,102,.15)',c:'#0a6040'},
+  {bg:'rgba(37,130,211,.15)',c:'#0a4080'},
+  {bg:'rgba(211,90,37,.15)',c:'#80300a'},
+  {bg:'rgba(150,37,211,.15)',c:'#500a80'},
+  {bg:'rgba(37,211,180,.15)',c:'#0a6050'},
+  {bg:'rgba(211,37,150,.15)',c:'#80104a'},
+];
+const DEFAULT_EMOJIS=['🧘','📵','💧','🏃','📚','🥗','😴','✍️','🌅','🎯'];
+const SK='habit-tracker-v2';
+let weekDates=[],todayIdx=-1,syncTimer=null;
+
+let S={
+  goal:{emoji:'🧘',text:'Mindful mornings',sub:'Pick your tasks, check in daily'},
+  tasks:[
+    {id:1,emoji:'🧘',name:'Meditate for 10 mins'},
+    {id:2,emoji:'📵',name:'No phone first 30 mins'},
+  ],
+  members:[
+    {id:1,name:'Alex',taskIds:[1,2]},
+    {id:2,name:'Jordan',taskIds:[1]},
+    {id:3,name:'Sam',taskIds:[1,2]},
+  ],
+  checks:{},
+  nextId:4,nextTaskId:3
+};
+
+// ── WEEK INIT ──
+function initWeek(){
+  const now=new Date();
+  const mon=new Date(now);
+  mon.setDate(now.getDate()-(((now.getDay()+6)%7)));
+  weekDates=[];
+  for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);weekDates.push(d);}
+  todayIdx=weekDates.findIndex(d=>d.toDateString()===now.toDateString());
+  const fmt=d=>d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  document.getElementById('week-label').textContent=`Week ${fmt(weekDates[0])} – ${fmt(weekDates[6])}`;
+  document.getElementById('link-box').textContent=window.location.href;
+}
+
+// ── STORAGE ──
+const hasStorage=typeof window.storage!=='undefined';
+
+function setSyncBadge(s){
+  const b=document.getElementById('sync-badge');
+  b.className='sync-pill '+(s==='ok'?'sync-ok':s==='ing'?'sync-ing':'sync-err');
+  b.textContent=s==='ok'?'✓ Synced':s==='ing'?'Saving…':'Offline (local)';
+}
+
+async function load(){
+  setSyncBadge('ing');
+  if(hasStorage){
+    try{
+      const r=await window.storage.get(SK,true);
+      if(r&&r.value)S=Object.assign({},S,JSON.parse(r.value));
+      setSyncBadge('ok');
+    }catch(e){
+      // fallback to localStorage
+      const ls=localStorage.getItem(SK);
+      if(ls)try{S=Object.assign({},S,JSON.parse(ls));}catch(e2){}
+      setSyncBadge('err');
+    }
+  } else {
+    const ls=localStorage.getItem(SK);
+    if(ls)try{S=Object.assign({},S,JSON.parse(ls));}catch(e){}
+    setSyncBadge('ok');
+  }
+  renderAll();
+}
+
+async function save(){
+  const json=JSON.stringify(S);
+  // always save locally as backup
+  try{localStorage.setItem(SK,json);}catch(e){}
+  setSyncBadge('ing');
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(async()=>{
+    if(hasStorage){
+      try{await window.storage.set(SK,json,true);setSyncBadge('ok');}
+      catch(e){setSyncBadge('err');}
+    } else {
+      setSyncBadge('ok');
+    }
+  },500);
+}
+
+// ── HELPERS ──
+function ck(mid,tid,di){return `${mid}_${tid}_${di}`;}
+function inits(n){return n.split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2);}
+function memberOptedIn(mid,tid){const m=S.members.find(x=>x.id===mid);return m&&m.taskIds.includes(tid);}
+
+function getMemberDone(mid,di){
+  const m=S.members.find(x=>x.id===mid);
+  if(!m||!m.taskIds.length)return{done:0,total:0};
+  return{done:m.taskIds.filter(tid=>S.checks[ck(mid,tid,di)]).length,total:m.taskIds.length};
+}
+
+function getStreak(mid){
+  let s=0;
+  for(let i=todayIdx;i>=0;i--){
+    const{done,total}=getMemberDone(mid,i);
+    if(total>0&&done===total)s++;else break;
+  }
+  return s;
+}
+
+// ── RENDER ──
+function renderGoal(){
+  document.getElementById('goal-emoji').textContent=S.goal.emoji;
+  document.getElementById('goal-text').textContent=S.goal.text;
+  document.getElementById('goal-sub').textContent=S.goal.sub;
+}
+
+function renderTasks(){
+  const el=document.getElementById('tasks-list');
+  if(!S.tasks.length){el.innerHTML='<div class="empty">No tasks yet — add one above.</div>';return;}
+  el.innerHTML='';
+  S.tasks.forEach(t=>{
+    const count=S.members.filter(m=>m.taskIds.includes(t.id)).length;
+    const d=document.createElement('div');
+    d.className='task-item';
+    d.innerHTML=`
+      <div class="task-emoji">${t.emoji||'📌'}</div>
+      <div class="task-info">
+        <div class="task-name">${t.name}</div>
+        <div class="task-opted">${count} member${count!==1?'s':''} opted in</div>
+      </div>
+      <div class="task-actions">
+        <button class="btn btn-sm" onclick="openManageTask(${t.id})">👥 Manage</button>
+        <button class="btn btn-icon" onclick="deleteTask(${t.id})" title="Delete task">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>`;
+    el.appendChild(d);
+  });
+}
+
+const DAY_ABBR=['M','T','W','T','F','S','S'];
+
+function renderMembers(){
+  const el=document.getElementById('members-list');
+  if(!S.members.length){el.innerHTML='<div class="empty">No members yet — add one above.</div>';renderStats();return;}
+  el.innerHTML='';
+  S.members.forEach((m,idx)=>{
+    const av=AVC[idx%AVC.length];
+    const streak=getStreak(m.id);
+    const{done,total}=getMemberDone(m.id,todayIdx);
+    const allDone=total>0&&done===total;
+    const summary=total?`${done}/${total} tasks today`:'No tasks opted in';
+
+    const block=document.createElement('div');
+    block.className='member-section';
+
+    const headHtml=`
+      <div class="member-head" onclick="toggleMember('mb-${m.id}',this)">
+        <div class="av" style="background:${av.bg};color:${av.c}">${inits(m.name)}</div>
+        <span class="member-head-name">${m.name}${streak>=2?`<span class="streak-badge">🔥${streak}</span>`:''}</span>
+        <span class="member-summary">${allDone?'✅ All done':summary}</span>
+        <button class="btn btn-icon" onclick="event.stopPropagation();deleteMember(${m.id})" title="Remove member" style="margin-left:4px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+        <span class="chevron" id="chev-${m.id}">▼</span>
+      </div>`;
+
+    block.innerHTML=headHtml+`<div class="member-body" id="mb-${m.id}">${buildMemberBody(m)}</div>`;
+    el.appendChild(block);
+  });
+  renderStats();
+}
+
+function buildMemberBody(m){
+  if(!m.taskIds.length){
+    return`<div class="empty">Not opted into any tasks. <a href="#" onclick="openManageMember(${m.id});return false" style="color:var(--green-dark)">Add tasks →</a></div>`;
+  }
+  const dayHeaderHtml=`<div class="day-header-row">${DAY_ABBR.map((l,i)=>`<div class="day-lbl${i===todayIdx?' today':''}">l</div>`).join('')}</div>`;
+  let rows='';
+  m.taskIds.forEach(tid=>{
+    const task=S.tasks.find(t=>t.id===tid);
+    if(!task)return;
+    let btns='';
+    for(let i=0;i<7;i++){
+      const k=ck(m.id,tid,i);
+      const done=!!S.checks[k];
+      const future=todayIdx!==-1&&i>todayIdx;
+      const isToday=i===todayIdx;
+      btns+=`<button class="ck${done?' done':''}${isToday&&!done?' today':''}"
+${future?'disabled':''} onclick="toggleCheck(${m.id},${tid},${i})" aria-label="Day ${i+1}">
+        ${done?`<svg viewBox="0 0 13 13"><polyline points="2,6.5 5,9.5 11,3"/></svg>`:DAY_ABBR[i]}
+      </button>`;
+    }
+    rows+=`<div class="member-task-row">
+      <span class="mtr-emoji">${task.emoji||'📌'}</span>
+      <span class="mtr-name" title="${task.name}">${task.name}</span>
+      <div class="days-row days-scroll">${btns}</div>
+    </div>`;
+  });
+  return dayHeaderHtml+rows+`<div style="margin-top:8px"><button class="btn btn-sm" onclick="openManageMember(${m.id})">⚙️ Edit tasks</button></div>`;
+}
+
+function toggleMember(bodyId,hdrEl){
+  const body=document.getElementById(bodyId);
+  const chev=hdrEl.querySelector('.chevron');
+  body.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+
+function renderStats(){
+  let totalChecks=0,possChecks=0,fullToday=0;
+  S.members.forEach(m=>{
+    const{done,total}=getMemberDone(m.id,todayIdx);
+    if(total>0&&done===total)fullToday++;
+    for(let i=0;i<=todayIdx;i++){
+      possChecks+=m.taskIds.length;
+      m.taskIds.forEach(tid=>{if(S.checks[ck(m.id,tid,i)])totalChecks++;});
+    }
+  });
+  const pct=possChecks>0?Math.round((totalChecks/possChecks)*100):0;
+  document.getElementById('pbar').style.width=pct+'%';
+  document.getElementById('stat-today').textContent=`${fullToday}/${S.members.length}`;
+  document.getElementById('stat-pct').textContent=possChecks>0?pct+'%':'—';
+}
+
+function renderAll(){renderGoal();renderTasks();renderMembers();}
+
+// ── INTERACTIONS ──
+async function toggleCheck(mid,tid,di){
+  if(di>todayIdx&&todayIdx!==-1)return;
+  const k=ck(mid,tid,di);
+  S.checks[k]=!S.checks[k];
+  // refresh just that member body
+  const m=S.members.find(x=>x.id===mid);
+  const bodyEl=document.getElementById(`mb-${m.id}`);
+  if(bodyEl)bodyEl.innerHTML=buildMemberBody(m);
+  renderStats();
+  await save();
+}
+
+async function deleteMember(mid){
+  if(!confirm('Remove this member?'))return;
+  S.members=S.members.filter(m=>m.id!==mid);
+  renderTasks();renderMembers();await save();
+}
+
+async function deleteTask(tid){
+  if(!confirm('Delete this task?'))return;
+  S.tasks=S.tasks.filter(t=>t.id!==tid);
+  S.members.forEach(m=>{m.taskIds=m.taskIds.filter(id=>id!==tid);});
+  renderTasks();renderMembers();await save();
+}
+
+// ── MODALS ──
+let _newTaskOptins=[];
+let _newMemberTasks=[];
+
+function openModal(id){
+  if(id==='task-modal'){
+    document.getElementById('inp-task-emoji').value='';
+    document.getElementById('inp-task-name').value='';
+    _newTaskOptins=S.members.map(m=>m.id);
+    const ol=document.getElementById('task-optin-list');
+    ol.innerHTML=S.members.length?'':'<div class="empty">Add members first.</div>';
+    S.members.forEach(m=>{
+      const row=makeOptinRow(`nto-${m.id}`,m.name,true,()=>toggleArr(_newTaskOptins,m.id,`nto-${m.id}`));
+      ol.appendChild(row);
+    });
+  }
+  if(id==='member-modal'){
+    document.getElementById('inp-member').value='';
+    _newMemberTasks=S.tasks.map(t=>t.id);
+    const ol=document.getElementById('member-optin-list');
+    ol.innerHTML=S.tasks.length?'':'<div class="empty">No tasks yet.</div>';
+    S.tasks.forEach(t=>{
+      const row=makeOptinRow(`nmo-${t.id}`,`${t.emoji} ${t.name}`,true,()=>toggleArr(_newMemberTasks,t.id,`nmo-${t.id}`));
+      ol.appendChild(row);
+    });
+  }
+  if(id==='goal-modal'){
+    document.getElementById('inp-emoji').value=S.goal.emoji;
+    document.getElementById('inp-goal').value=S.goal.text;
+    document.getElementById('inp-sub').value=S.goal.sub;
+  }
+  document.getElementById(id).classList.add('open');
+  const inp=document.querySelector(`#${id} input`);
+  if(inp)setTimeout(()=>inp.focus(),80);
+}
+
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+function makeOptinRow(elId,label,checked,onToggle){
+  const row=document.createElement('div');
+  row.className='optin-row';
+  row.innerHTML=`<div class="optin-check${checked?' on':''} " id="${elId}"></div><span class="optin-label">${label}</span>`;
+  row.querySelector('.optin-check').addEventListener('click',onToggle);
+  return row;
+}
+
+function toggleArr(arr,id,elId){
+  const i=arr.indexOf(id);
+  if(i>-1)arr.splice(i,1);else arr.push(id);
+  const el=document.getElementById(elId);
+  if(el)el.className='optin-check'+(arr.includes(id)?' on':'');
+}
+
+// manage task opt-ins
+function openManageTask(taskId){
+  const task=S.tasks.find(t=>t.id===taskId);
+  document.getElementById('manage-title').textContent=`${task.emoji} ${task.name} — who's in?`;
+  const list=document.getElementById('manage-list');
+  list.innerHTML=S.members.length?'':'<div class="empty">No members yet.</div>';
+  S.members.forEach(m=>{
+    const opted=m.taskIds.includes(taskId);
+    const row=makeOptinRow(`mgto-${m.id}`,m.name,opted,async()=>{
+      const idx=m.taskIds.indexOf(taskId);
+      if(idx>-1)m.taskIds.splice(idx,1);else m.taskIds.push(taskId);
+      const el=document.getElementById(`mgto-${m.id}`);
+      if(el)el.className='optin-check'+(m.taskIds.includes(taskId)?' on':'');
+      renderTasks();renderMembers();await save();
+    });
+    list.appendChild(row);
+  });
+  openModal('manage-modal');
+}
+
+// manage member tasks
+function openManageMember(memberId){
+  const m=S.members.find(x=>x.id===memberId);
+  document.getElementById('manage-title').textContent=`${m.name}'s tasks`;
+  const list=document.getElementById('manage-list');
+  list.innerHTML=S.tasks.length?'':'<div class="empty">No tasks available.</div>';
+  S.tasks.forEach(t=>{
+    const opted=m.taskIds.includes(t.id);
+    const row=makeOptinRow(`mgmt-${t.id}`,`${t.emoji} ${t.name}`,opted,async()=>{
+      const idx=m.taskIds.indexOf(t.id);
+      if(idx>-1)m.taskIds.splice(idx,1);else m.taskIds.push(t.id);
+      const el=document.getElementById(`mgmt-${t.id}`);
+      if(el)el.className='optin-check'+(m.taskIds.includes(t.id)?' on':'');
+      renderTasks();renderMembers();await save();
+    });
+    list.appendChild(row);
+  });
+  openModal('manage-modal');
+}
+
+async function saveGoal(){
+  S.goal.emoji=document.getElementById('inp-emoji').value.trim()||'🎯';
+  S.goal.text=document.getElementById('inp-goal').value.trim()||'Our goal';
+  S.goal.sub=document.getElementById('inp-sub').value.trim()||'';
+  renderGoal();closeModal('goal-modal');await save();
+}
+
+async function saveTask(){
+  const name=document.getElementById('inp-task-name').value.trim();
+  if(!name)return;
+  const emoji=document.getElementById('inp-task-emoji').value.trim()||DEFAULT_EMOJIS[S.tasks.length%DEFAULT_EMOJIS.length];
+  const tid=S.nextTaskId++;
+  S.tasks.push({id:tid,emoji,name});
+  _newTaskOptins.forEach(mid=>{
+    const m=S.members.find(x=>x.id===mid);
+    if(m&&!m.taskIds.includes(tid))m.taskIds.push(tid);
+  });
+  closeModal('task-modal');renderTasks();renderMembers();await save();
+}
+
+async function saveMember(){
+  const name=document.getElementById('inp-member').value.trim();
+  if(!name)return;
+  S.members.push({id:S.nextId++,name,taskIds:[..._newMemberTasks]});
+  _newMemberTasks=[];
+  closeModal('member-modal');renderTasks();renderMembers();await save();
+}
+
+// ── SHARE ──
+function shareWA(){
+  const lines=[`${S.goal.emoji} *${S.goal.text}* — weekly check-in`,``];
+  S.members.forEach(m=>{
+    lines.push(`*${m.name}*`);
+    if(!m.taskIds.length){lines.push('  (no tasks)');lines.push('');return;}
+    m.taskIds.forEach(tid=>{
+      const task=S.tasks.find(t=>t.id===tid);
+      if(!task)return;
+      let row=`  ${task.emoji} ${task.name.slice(0,18).padEnd(18)} `;
+      for(let i=0;i<7;i++){row+=S.checks[ck(m.id,tid,i)]?'✅':(i<=todayIdx?'⬜':'—');}
+      lines.push(row);
+    });
+    lines.push('');
+  });
+  lines.push(`📲 Track here: ${window.location.href}`);
+  window.open('https://wa.me/?text='+encodeURIComponent(lines.join('\n')),'_blank');
+}
+
+function copyLink(){
+  const url=window.location.href;
+  navigator.clipboard.writeText(url).then(()=>{
+    const b=document.getElementById('copy-btn');
+    const orig=b.textContent;
+    b.textContent='✅ Copied!';
+    setTimeout(()=>{b.textContent=orig;},2000);
+  }).catch(()=>alert('Copy: '+url));
+}
+
+// ── KEYBOARD + CLICK OUTSIDE ──
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open').forEach(el=>el.classList.remove('open'));
+  if(e.key==='Enter'){
+    if(document.getElementById('goal-modal').classList.contains('open'))saveGoal();
+    if(document.getElementById('task-modal').classList.contains('open'))saveTask();
+    if(document.getElementById('member-modal').classList.contains('open'))saveMember();
+  }
+});
+
+// ── AUTO REFRESH (shared storage) ──
+setInterval(async()=>{
+  if(!hasStorage)return;
+  try{const r=await window.storage.get(SK,true);if(r&&r.value){S=Object.assign({},S,JSON.parse(r.value));renderAll();}}catch(e){}
+},15000);
+
+// ── BOOT ──
+initWeek();load();
+</script>
+</body>
+</html>
